@@ -3,7 +3,7 @@ require 'json'
 require "fast_polylines"
 # Source Details 
 SOURCE = 'Dallas, TX'
-# Destination Details 
+# Destination Details
 DESTINATION = 'New York, NY'
 
 # GET Request to Bing for Polyline
@@ -12,7 +12,7 @@ BING_URL = "http://dev.virtualearth.net/REST/v1/Routes?key=#{KEY}&wayPoint.1=#{S
 RESPONSE = HTTParty.get(BING_URL).body
 json_parsed = JSON.parse(RESPONSE)
 
-# Extracting mapbox polyline from JSON
+# Extracting mapbox polyline from JSON. HERE coordinates are encoded to google polyline
 bing_coordinates_array = json_parsed['resourceSets'].map { |x| x['resources'] }.pop.map { |y| y['routePath']}.map {|z| z['line']}.pop['coordinates']
 google_encoded_polyline = FastPolylines.encode(bing_coordinates_array)
 # Sending POST request to TollGuru
