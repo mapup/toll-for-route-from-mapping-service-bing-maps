@@ -2,13 +2,14 @@
 import json
 import requests
 import polyline as Poly
+import os
 
 
 '''Fetching Polyline from bingmaps'''
 
 # Token from Bing Maps
-key = 'AmAD8q8fIDP_sqNpKEMnx60AT3Gfy9O3L1jFkVIVbX4t2kn1aieFU3zd8nq6e-4t'
 
+key = os.environ.get('AmAD8q8fIDP_sqNpKEMnx60AT3Gfy9O3L1jFkVIVbX4t2kn1aieFU3zd8nq6e-4t')
 source = 'Dallas, TX'
 destination = 'New York, NY'
 
@@ -44,7 +45,7 @@ else:
 '''Calling Tollguru API'''
 
 #API key for Tollguru
-Tolls_Key = 'J9L4QH37NQ7jqRQPND9fJPDHgJd8mptg'
+Tolls_Key= os.environ.get('J9L4QH37NQ7jqRQPND9fJPDHgJd8mptg')
 
 #Tollguru querry url
 Tolls_URL = 'https://dev.tollguru.com/v1/calc/route'
