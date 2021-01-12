@@ -9,7 +9,7 @@ import os
 
 # Token from Bing Maps
 
-key = os.environ.get('AmAD8q8fIDP_sqNpKEMnx60AT3Gfy9O3L1jFkVIVbX4t2kn1aieFU3zd8nq6e-4t')
+key = os.environ.get('bingMaps')
 source = 'Dallas, TX'
 destination = 'New York, NY'
 
@@ -20,32 +20,18 @@ url = 'http://dev.virtualearth.net/REST/v1/Routes?key={a}&wayPoint.1={b}&wayPoin
 #converting the response to json
 response=requests.get(url).json()
 
+#bingmap's does not give polyline directly rather provide coordinates of all the nodes  
 temp=response['resourceSets'][0]['resources'][0]['routePath']['line']['coordinates']
+#We will encode these coordinates using encode function from polyline module to generate polyline
 polyline = Poly.encode(temp)
 
-#checking for errors in response 
-'''
-if str(response).find('message')>-1:
-    raise Exception("{}: {} , check latitude,longitude perhaps".format(response['code'],response['message']))
-elif str(response).find('responsecode')>-1 and response['responsecode']=='401':
-    raise Exception("{} {}".format(response['error_code'],response['error_description']))
-else:
-    #The response is a dict where Polyline is inside first element named "routes" , first element is a list , go to 1st element there
-    #you will find a key named "geometry" which is essentially the Polyline 
-    
-    #Extracting polyline
-    #polyline=response["routes"][0]['geometry'] 
-
-'''
-
-
-
+#checking for errors in response      #'''TODO check for errors in bingmap response
 
 
 '''Calling Tollguru API'''
 
 #API key for Tollguru
-Tolls_Key= os.environ.get('J9L4QH37NQ7jqRQPND9fJPDHgJd8mptg')
+Tolls_Key= os.environ.get('tollguru')
 
 #Tollguru querry url
 Tolls_URL = 'https://dev.tollguru.com/v1/calc/route'
