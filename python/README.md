@@ -17,7 +17,7 @@ With this in place, make a GET request: https://www.bingmapsportal.com/
 ### Note:
 * REQUEST should include 'routeAttributes' as 'routePath'. Setting 'routeAttributes' as 'routePath' gives us a series of coordinates describing the whole path, which we later convert to encoded polyline.
 
-```javascript
+'''python
 
 '''Fetching Polyline from bingmaps'''
 
