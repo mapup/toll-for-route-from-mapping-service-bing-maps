@@ -2,13 +2,13 @@
 //using googlemaps API
 
 //from & to location..
-$from = 'Mainstr,Dallas,TX';
-$to = 'Addison,TX';
-$key = 'Ao9bE0ntV7wuRjyne1zyVZxQz4xZWQZu5oqB9tGO71je5UNO89zQe52hW81quvqr';
+$from = 'Dallas,TX';
+$to = 'NewYork,NY';
+$key = 'bings_api_key';
 
 $url = 'http://dev.virtualearth.net/REST/v1/Routes?key='.$key.'&wayPoint.1='.$from.'&wayPoint.2='.$to.'&routeAttributes=routePath';
-//connection..
 
+//connection..
 $bings = curl_init();
 
 curl_setopt($bings, CURLOPT_SSL_VERIFYHOST, false);
@@ -17,7 +17,7 @@ curl_setopt($bings, CURLOPT_SSL_VERIFYPEER, false);
 curl_setopt($bings, CURLOPT_URL, $url);
 curl_setopt($bings, CURLOPT_RETURNTRANSFER, true);
 
-//getting response from googleapis..
+//getting response from binmapsapis..
 $response = curl_exec($bings);
 $err = curl_error($bings);
 
@@ -31,13 +31,7 @@ if ($err) {
 
 //extracting polyline from the JSON response..
 $data_bingmap = json_decode($response, true);
-$data_new = $data_bingmap['resourceSets'];
-$new_data = $data_new['0'];
-$pol_data = $new_data['resources'];
-$pol_data_new = $pol_data['0'];
-$p_data = $pol_data_new['routePath'];
-$p_data_new = $p_data['line'];
-$p_final = $p_data_new['coordinates'];
+$p_final = $data_bingmap['resourceSets']['0']['resources']['0']['routePath']['line']['coordinates'];
 
 //polyline..
 require_once(__DIR__.'/Polyline.php');
@@ -74,7 +68,7 @@ CURLOPT_CUSTOMREQUEST => "POST",
 CURLOPT_POSTFIELDS => $encode_postData,
 CURLOPT_HTTPHEADER => array(
 				      "content-type: application/json",
-				      "x-api-key: 8hjbGhmFqP8HBQJ6NbMpT2FjRNhhtdgT"),
+				      "x-api-key: tollguru_api_key"),
 ));
 
 $response = curl_exec($curl);
@@ -89,7 +83,6 @@ if ($err) {
 }
 
 //response from tollguru..
-var_dump(json_decode($response, true));
-// $data = var_dump(json_decode($response, true));
-//print_r($data);
+$data = var_dump(json_decode($response, true));
+print_r($data);
 ?>
