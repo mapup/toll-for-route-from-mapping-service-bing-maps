@@ -16,7 +16,7 @@ curl_setopt($bings, CURLOPT_SSL_VERIFYPEER, false);
 curl_setopt($bings, CURLOPT_URL, $url);
 curl_setopt($bings, CURLOPT_RETURNTRANSFER, true);
 
-//getting response from googleapis..
+//getting response from bingmapapis..
 $response = curl_exec($bings);
 $err = curl_error($bings);
 
