@@ -1,38 +1,39 @@
 const request = require("request");
+const polyline = require("polyline");
 
-// Token from mapbox
-const token = process.env.MAPBOX_TOKEN;
-const tollguruKey = process.env.TOLLGURU_KEY;
+// Token from Bing Maps
+const key = process.env.BING_MAPS_API_KEY
+const tollguruKey = process.env.TOLLGURU_KEY
 
-// Dallas, TX
-const source = {
-    longitude: '-96.7970',
-    latitude: '32.7767',
-}
+const source = 'Dallas, TX'
+const destination = 'New York, NY';
 
-// New York, NY
-const destination = {
-    longitude: '-74.0060',
-    latitude: '40.7128'
-};
-
-const url = `https://api.mapbox.com/directions/v5/mapbox/driving/${source.longitude},${source.latitude};${destination.longitude},${destination.latitude}?geometries=polyline&access_token=${token}&overview=full`
+const url = `http://dev.virtualearth.net/REST/v1/Routes?key=${key}&wayPoint.1=${source}&wayPoint.2=${destination}&routeAttributes=routePath`
 
 const head = arr => arr[0];
-// JSON path "$..geometry"
-const getGeometry = body => body.routes.map(x => x.geometry);
-const getPolyline = body => head(getGeometry(JSON.parse(body)));
+const flatten = (arr, x) => arr.concat(x);
 
-const getRoute = (cb) => request.get(url, cb);
+// JSON path "$..coordinates"
+const getRoutePath = body => body.resourceSets
+  .map(x => x.resources)
+  .reduce(flatten)
+  .map(x => x.routePath)
+  .map(x => x.line.coordinates)
+  .reduce(flatten)
 
-//const handleRoute = (e, r, body) => console.log(getPolyline(body));
+const getPolyline = body => polyline.encode(getRoutePath(JSON.parse(body)));
+
+const getRoute = (cb) => request(url, cb);
+
+//const handleRoute  = (cb) => (e, r, body) => console.log(getPolyline(body));
 //getRoute(handleRoute);
 
-const tollguruUrl = 'https://dev.tollguru.com/v1/calc/route';
+const tollguruUrl = 'https://dev.tollguru.com/v1/calc/route'
 
 const handleRoute = (e, r, body) =>  {
   console.log(body)
   const _polyline = getPolyline(body);
+  console.log(_polyline);
   request.post(
     {
       url: tollguruUrl,
@@ -40,16 +41,13 @@ const handleRoute = (e, r, body) =>  {
         'content-type': 'application/json',
         'x-api-key': tollguruKey
       },
-      body: JSON.stringify({
-        source: "mapbox",
-        polyline: _polyline,
-      })
+      body: JSON.stringify({ source: "bing", polyline: _polyline })
     },
     (e, r, body) => {
       console.log(e);
       console.log(body)
     }
   )
-}
+};
 
 getRoute(handleRoute);
