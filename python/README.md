@@ -15,31 +15,27 @@
 With this in place, make a GET request: https://www.bingmapsportal.com/
 
 ### Note:
-* REQUEST should include 'routeAttributes' as 'routePath'. Setting 'routeAttributes' as 'routePath' gives us a series of coordinates describing the whole path, which we later convert to encoded polyline.
+* REQUEST should include `routeAttributes` as `routePath`. Setting `routeAttributes` as `routePath` gives us a series of coordinates describing the whole path, which we later convert to encoded polyline.
 
-'''python
+```python
+import json
+import requests
+import polyline as poly
+import os
 
-'''Fetching Polyline from bingmaps'''
+# Token from Bing Maps
+key = os.environ.get('BING_API_Key')
 
-# Token from Bing Maps and set this in the environment setting 
-
-key = os.environ.get('BINGMAPS')
-source = '251 West, IN-120, Fremont, IN 46737'
-destination = '2323 Willowcreek Rd, Portage, IN 46368'
-
-#Query Bing Maps with Key and Source-Destination coordinates
-url = 'http://dev.virtualearth.net/REST/v1/Routes?key={a}&wayPoint.1={b}&wayPoint.2=${c}&routeAttributes=routePath'.format(a=key,b=source,c=destination)
-
-
-#converting the response to json
-response=requests.get(url).json()
-
-#bingmap's does not give polyline directly rather provide coordinates of all the nodes  
-temp=response['resourceSets'][0]['resources'][0]['routePath']['line']['coordinates']
-#We will encode these coordinates using encode function from polyline module to generate polyline
-polyline = Poly.encode(temp)
-   
-
+def get_polyline_from_bing_maps(source, destination):
+    #Query bing with Key and Source-Destination coordinates
+    url = 'http://dev.virtualearth.net/REST/v1/Routes?key={a}&wayPoint.1={b}&wayPoint.2=${c}&routeAttributes=routePath'.format(a=key,b=source,c=destination)
+    #converting the response to json
+    response=requests.get(url).json()
+    #bingmap's does not give polyline directly rather provide coordinates of all the nodes  
+    temp=response['resourceSets'][0]['resources'][0]['routePath']['line']['coordinates']
+    #We will encode these coordinates using encode function from polyline module to generate polyline
+    polyline = poly.encode(temp)
+    return(polyline)
 ```
 
 Note:
@@ -52,46 +48,46 @@ We need to send this route polyline to TollGuru API to receive toll information
 
 ### Get key to access TollGuru polyline API
 * create a dev account to receive a [free key from TollGuru](https://tollguru.com/developers/get-api-key)
-* suggest adding 'vehicleType' parameter. Tolls for cars are different than trucks and therefore if 'vehicleType' is not specified, may not receive accurate tolls. For example, tolls are generally higher for trucks than cars. If 'vehicleType' is not specified, by default tolls are returned for 2-axle cars. 
-* Similarly, 'departure_time' is important for locations where tolls change based on time-of-the-day.
+* suggest adding `vehicleType` parameter. Tolls for cars are different than trucks and therefore if `vehicleType` is not specified, may not receive accurate tolls. For example, tolls are generally higher for trucks than cars. If `vehicleType` is not specified, by default tolls are returned for 2-axle cars. 
+* Similarly, `departure_time` is important for locations where tolls change based on time-of-the-day.
 
 the last line can be changed to following
 
-'''Python
+```python
+import json
+import requests
+import polyline as poly
+import os
 
-'''Calling Tollguru API'''
+#API key for Tollguru
+Tolls_Key = os.environ.get('Tollguru_API_New')
 
-#API key for Tollguru and set this in the environment setting 
-Tolls_Key= os.environ.get('TOLLGURU')
+def get_rates_from_tollguru(polyline):
+    #Tollguru querry url
+    Tolls_URL = 'https://dev.tollguru.com/v1/calc/route'
+    #Tollguru resquest parameters
+    headers = {
+                'Content-type': 'application/json',
+                'x-api-key': Tolls_Key
+                }
+    params = {
+                #Explore https://tollguru.com/developers/docs/ to get best of all the parameter that tollguru has to offer 
+                'source': "bing",
+                'polyline': polyline,                      # this is the encoded polyline that we made     
+                'vehicleType': '2AxlesAuto',                #'''Visit https://tollguru.com/developers/docs/#vehicle-types to know more options'''
+                'departure_time' : "2021-01-05T09:46:08Z"   #'''Visit https://en.wikipedia.org/wiki/Unix_time to know the time format'''
+                }
+    #Requesting Tollguru with parameters
+    response_tollguru= requests.post(Tolls_URL, json=params, headers=headers,timeout=200).json()
+    #print(response_tollguru)
+    #checking for errors or printing rates
+    if str(response_tollguru).find('message')==-1:
+        return(response_tollguru['route']['costs'])
+    else:
+        raise Exception(response_tollguru['message'])
+```
 
-#Tollguru querry url
-Tolls_URL = 'https://dev.tollguru.com/v1/calc/route'
-
-#Tollguru resquest parameters
-headers = {
-            'Content-type': 'application/json',
-            'x-api-key': Tolls_Key
-          }
-params = {
-            'source': "bingmaps",
-            'polyline': polyline ,                      #  this is polyline that we fetched from the mapping service     
-            'vehicleType': '2AxlesAuto',               
-            'departure_time' : "2021-01-05T09:46:08Z"   
-        }
-
-#Requesting Tollguru with parameters
-response_tollguru= requests.post(Tolls_URL, json=params, headers=headers).json()
-
-#checking for errors or printing rates
-if str(response_tollguru).find('message')==-1:
-    print('\n The Rates Are ')
-    #extracting rates from Tollguru response is no error
-    #print(*response_tollguru['summary']['rates'].items(),end="\n\n")
-    print(*response_tollguru['route']['costs'].items(),end="\n\n")
-else:
-    raise Exception(response_tollguru['message'])
-
-The working code can be found in index.py file.
+The working code can be found in bingmaps.py file.
 
 ## License
 ISC License (ISC). Copyright 2020 &copy;TollGuru. https://tollguru.com/

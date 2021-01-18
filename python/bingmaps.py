@@ -1,60 +1,67 @@
 #Importing modules
 import json
 import requests
-import polyline as Poly
+import polyline as poly
 import os
 
+# Token from Bing Maps
+key = os.environ.get('BING_API_Key')
+#API key for Tollguru
+Tolls_Key = os.environ.get('Tollguru_API_New')
 
 '''Fetching Polyline from bingmaps'''
-
-# Token from Bing Maps
-
-key = os.environ.get('BINGMAPS')
-source = '251 West, IN-120, Fremont, IN 46737'
-destination = '2323 Willowcreek Rd, Portage, IN 46368'
-
-#Query MapmyIndia with Key and Source-Destination coordinates
-url = 'http://dev.virtualearth.net/REST/v1/Routes?key={a}&wayPoint.1={b}&wayPoint.2=${c}&routeAttributes=routePath'.format(a=key,b=source,c=destination)
-
-
-#converting the response to json
-response=requests.get(url).json()
-
-#bingmap's does not give polyline directly rather provide coordinates of all the nodes  
-temp=response['resourceSets'][0]['resources'][0]['routePath']['line']['coordinates']
-#We will encode these coordinates using encode function from polyline module to generate polyline
-polyline = Poly.encode(temp)
-   
-
+def get_polyline_from_bing_maps(source, destination):
+    #Query bing with Key and Source-Destination coordinates
+    url = 'http://dev.virtualearth.net/REST/v1/Routes?key={a}&wayPoint.1={b}&wayPoint.2=${c}&routeAttributes=routePath'.format(a=key,b=source,c=destination)
+    #converting the response to json
+    response=requests.get(url).json()
+    #bingmap's does not give polyline directly rather provide coordinates of all the nodes  
+    temp=response['resourceSets'][0]['resources'][0]['routePath']['line']['coordinates']
+    #We will encode these coordinates using encode function from polyline module to generate polyline
+    polyline = poly.encode(temp)
+    return(polyline)
+    
+    
 '''Calling Tollguru API'''
+def get_rates_from_tollguru(polyline):
+    #Tollguru querry url
+    Tolls_URL = 'https://dev.tollguru.com/v1/calc/route'
+    #Tollguru resquest parameters
+    headers = {
+                'Content-type': 'application/json',
+                'x-api-key': Tolls_Key
+                }
+    params = {
+                #Explore https://tollguru.com/developers/docs/ to get best of all the parameter that tollguru has to offer 
+                'source': "bing",
+                'polyline': polyline,                      # this is the encoded polyline that we made     
+                'vehicleType': '2AxlesAuto',                #'''Visit https://tollguru.com/developers/docs/#vehicle-types to know more options'''
+                'departure_time' : "2021-01-05T09:46:08Z"   #'''Visit https://en.wikipedia.org/wiki/Unix_time to know the time format'''
+                }
+    #Requesting Tollguru with parameters
+    response_tollguru= requests.post(Tolls_URL, json=params, headers=headers,timeout=200).json()
+    #print(response_tollguru)
+    #checking for errors or printing rates
+    if str(response_tollguru).find('message')==-1:
+        return(response_tollguru['route']['costs'])
+    else:
+        raise Exception(response_tollguru['message'])
+    
 
-#API key for Tollguru
-Tolls_Key= os.environ.get('TOLLGURU')
+'''Program Starts'''
+#Step 1 :Provide Source and Destination
+source = 'Dallas , TX'              
+destination = 'New York ,NY'
 
-#Tollguru querry url
-Tolls_URL = 'https://dev.tollguru.com/v1/calc/route'
+#Step 2 : Get Polyline from Bing
+polyline_from_bing=get_polyline_from_bing_maps(source, destination)
 
-#Tollguru resquest parameters
-headers = {
-            'Content-type': 'application/json',
-            'x-api-key': Tolls_Key
-          }
-params = {
-            'source': "bingmaps",
-            'polyline': polyline ,                      #  this is polyline that we fetched from the mapping service     
-            'vehicleType': '2AxlesAuto',               
-            'departure_time' : "2021-01-05T09:46:08Z"   
-        }
+#Step 3 : Get rates from Tollguru
+rates_from_tollguru=get_rates_from_tollguru(polyline_from_bing)
 
-#Requesting Tollguru with parameters
-response_tollguru= requests.post(Tolls_URL, json=params, headers=headers).json()
-
-#checking for errors or printing rates
-if str(response_tollguru).find('message')==-1:
-    print('\n The Rates Are ')
-    #extracting rates from Tollguru response is no error
-    #print(*response_tollguru['summary']['rates'].items(),end="\n\n")
-    print(*response_tollguru['route']['costs'].items(),end="\n\n")
+#Print the rates of all the available modes of payment
+if rates_from_tollguru=={}:
+    print("The route doesn't have tolls")
 else:
-    raise Exception(response_tollguru['message'])
+    print(f"The rates are \n {rates_from_tollguru}")
 
