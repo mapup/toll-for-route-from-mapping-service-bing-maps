@@ -34,8 +34,8 @@ def get_polyline_from_bing_maps(source, destination):
     #bingmap's does not give polyline directly rather provide coordinates of all the nodes  
     temp=response['resourceSets'][0]['resources'][0]['routePath']['line']['coordinates']
     #We will encode these coordinates using encode function from polyline module to generate polyline
-    polyline = poly.encode(temp)
-    return(polyline)
+    polyline_from_bing = poly.encode(temp)
+    return(polyline_from_bing)
 ```
 
 Note:
