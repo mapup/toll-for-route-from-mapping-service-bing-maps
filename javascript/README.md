@@ -1,58 +1,58 @@
-# [Mapbox](https://www.mapbox.com/)
+# [Bing Maps](https://www.bingmapsportal.com/)
 
-### Get token to access Mapbox APIs (if you have an API token skip this)
+### Get API key to access Bing Maps APIs (if you have an API key skip this)
 #### Step 1: Login/Signup
-* Create an accont to access [Mapbox Account Dashboard](https://account.mapbox.com/)
-* go to signup/login link https://account.mapbox.com/auth/signin/
+* Create an account to access [Bing Maps Dev Center](https://www.bingmapsportal.com/)
+* go to signup/login link https://www.bingmapsportal.com/
+* you will need a Microsoft account to access Bing Maps API.
+* you will need to agree to Micrsoft Bing Maps Platform's Terms of Service https://www.microsoft.com/maps/product/terms.html
 
-#### Step 2: Creating a token
-* You will be presented with a default token.
-* If you want you can create an application specific token.
+#### Step 2: Creating the KEY
+* Got to https://www.bingmapsportal.com/application
+* You should see your key there.
+* You can also create and application specific key.
 
-
-To get the route polyline make a GET request on https://api.mapbox.com/directions/v5/mapbox/driving/${source.longitude},${source.latitude};${destination.longitude},${destination.latitude}?geometries=polyline&access_token=${token}&overview=full
+With this in place, make a GET request: https://www.bingmapsportal.com/
 
 ### Note:
-* we will be sending `geometries` as `polyline` and `overview` as `full`.
-* Setting overview as full sends us complete route. Default value for `overview` is `simplified`, which is an approximate (smoothed) path of the resulting directions.
-* Mapbox accepts source and destination, as semicolon seperated
-  `${longitude,latitude}`.
+* we will be sending `routeAttributes` as `routePath`. Setting `routeAttributes` as `routePath` gives us a series of coordinates describing the whole path, which we later convert to encoded polyline.
 
 ```javascript
 const request = require("request");
+const polyline = require("polyline");
 
-// Token from mapbox
-const token = process.env.MAPBOX_TOKEN;
-const tollguruKey = process.env.TOLLGURU_KEY;
+// Token from Bing Maps
+const key = process.env.BING_MAPS_API_KEY
+const tollguruKey = process.env.TOLLGURU_KEY
 
-// Dallas, TX
-const source = {
-    longitude: '-96.7970',
-    latitude: '32.7767',
-}
+const source = 'Dallas, TX'
+const destination = 'New York, NY';
 
-// New York, NY
-const destination = {
-    longitude: '-74.0060',
-    latitude: '40.7128'
-};
+const url = `http://dev.virtualearth.net/REST/v1/Routes?key=${key}&wayPoint.1=${source}&wayPoint.2=${destination}&routeAttributes=routePath`
 
-const url = `https://api.mapbox.com/directions/v5/mapbox/driving/${source.longitude},${source.latitude};${destination.longitude},${destination.latitude}?geometries=polyline&access_token=${token}&overview=full`
+const head = arr => arr[0];
+const flatten = (arr, x) => arr.concat(x);
 
-const head = arr => arr[0]
-// JSON path "$..geometry"
-const getGeometry = body => body.routes.map(x => x.geometry)
-const getPolyline = body => head(getGeometry(JSON.parse(body)));
-const getRoute = (cb) => request.get(url, cb);
+// JSON path "$..coordinates"
+const getRoutePath = body => body.resourceSets
+  .map(x => x.resources)
+  .reduce(flatten)
+  .map(x => x.routePath)
+  .map(x => x.line.coordinates)
+  .reduce(flatten)
 
-const handleRoute = (e, r, body) => console.log(getPolyline(body));
+const getPolyline = body => polyline.encode(getRoutePath(JSON.parse(body)));
+
+const getRoute = (cb) => request(url, cb);
+
+const handleRoute  = (cb) => (e, r, body) => console.log(getPolyline(body));
 
 getRoute(handleRoute);
 ```
 
 Note:
 
-We extracted the polyline for a route from Mapbox API
+We extracted the polyline for a route from Bing Maps API
 
 We need to send this route polyline to TollGuru API to receive toll information
 
@@ -64,13 +64,15 @@ We need to send this route polyline to TollGuru API to receive toll information
 * Similarly, `departure_time` is important for locations where tolls change based on time-of-the-day.
 
 the last line can be changed to following
+
 ```javascript
 
-const tollguruUrl = 'https://dev.tollguru.com/v1/calc/route';
+const tollguruUrl = 'https://dev.tollguru.com/v1/calc/route'
 
 const handleRoute = (e, r, body) =>  {
   console.log(body)
   const _polyline = getPolyline(body);
+  console.log(_polyline);
   request.post(
     {
       url: tollguruUrl,
@@ -79,7 +81,7 @@ const handleRoute = (e, r, body) =>  {
         'x-api-key': tollguruKey
       },
       body: JSON.stringify({
-        source: "mapbox",
+        source: "bing",
         polyline: _polyline,
         vehicleType: "2AxlesAuto",
         departure_time: "2021-01-05T09:46:08Z"
@@ -90,9 +92,16 @@ const handleRoute = (e, r, body) =>  {
       console.log(body)
     }
   )
-}
+};
 
 getRoute(handleRoute);
 ```
 
-Whole working code can be found in index.js file.
+The working code can be found in index.js file.
+
+## License
+ISC License (ISC). Copyright 2020 &copy;TollGuru. https://tollguru.com/
+
+Permission to use, copy, modify, and/or distribute this software for any purpose with or without fee is hereby granted, provided that the above copyright notice and this permission notice appear in all copies.
+
+THE SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES WITH REGARD TO THIS SOFTWARE INCLUDING ALL IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR ANY SPECIAL, DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES WHATSOEVER RESULTING FROM LOSS OF USE, DATA OR PROFITS, WHETHER IN AN ACTION OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
