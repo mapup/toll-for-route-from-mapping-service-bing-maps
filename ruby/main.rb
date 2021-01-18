@@ -1,6 +1,7 @@
 require 'HTTParty'
 require 'json'
 require "fast_polylines"
+require 'cgi'
 # Source Details 
 SOURCE = 'Dallas, TX'
 # Destination Details
@@ -8,7 +9,7 @@ DESTINATION = 'New York, NY'
 
 # GET Request to Bing for Polyline
 KEY = ENV['BING_KEY']
-BING_URL = "http://dev.virtualearth.net/REST/v1/Routes?key=#{KEY}&wayPoint.1=#{SOURCE}&wayPoint.2=#{DESTINATION}&routeAttributes=routePath"
+BING_URL = "http://dev.virtualearth.net/REST/v1/Routes?key=#{KEY}&wayPoint.1=#{CGI::escape(SOURCE)}&wayPoint.2=#{CGI::escape(DESTINATION)}&routeAttributes=routePath"
 RESPONSE = HTTParty.get(BING_URL).body
 json_parsed = JSON.parse(RESPONSE)
 
