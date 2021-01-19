@@ -6,7 +6,7 @@ $from = 'Dallas,TX';
 $to = 'NewYork,NY';
 $key = 'bings_api_key';
 
-$url = 'http://dev.virtualearth.net/REST/v1/Routes?key='.$key.'&wayPoint.1='.$from.'&wayPoint.2='.$to.'&routeAttributes=routePath';
+$url = 'http://dev.virtualearth.net/REST/v1/Routes?key='.$key.'&wayPoint.1='.urlencode($from).'&wayPoint.2='.urlencode($to).'&routeAttributes=routePath';
 
 //connection..
 $bings = curl_init();
