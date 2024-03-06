@@ -1,16 +1,18 @@
 const request = require("request");
 const polyline = require("polyline");
 
-// Token from Bing Maps
-const key = process.env.BING_MAPS_API_KEY
-const tollguruKey = process.env.TOLLGURU_KEY
+const BING_API_KEY = process.env.BING_MAPS_API_KEY // Token from Bing Maps
+const BING_API_URL = "http://dev.virtualearth.net/REST/v1/Routes"
+
+const TOLLGURU_API_KEY = process.env.TOLLGURU_API_KEY // API key for Tollguru
+const TOLLGURU_API_URL = "https://apis.tollguru.com/toll/v2" // Base URL for TollGuru Toll API
+const POLYLINE_ENDPOINT = "complete-polyline-from-mapping-service"
 
 const source = 'Dallas, TX'
 const destination = 'New York, NY';
 
-const url = `http://dev.virtualearth.net/REST/v1/Routes?key=${key}&wayPoint.1=${source}&wayPoint.2=${destination}&routeAttributes=routePath`
+const url = `${BING_API_URL}?key=${BING_API_KEY}&wayPoint.1=${source}&wayPoint.2=${destination}&routeAttributes=routePath`
 
-const head = arr => arr[0];
 const flatten = (arr, x) => arr.concat(x);
 
 // JSON path "$..coordinates"
@@ -21,25 +23,20 @@ const getRoutePath = body => body.resourceSets
   .map(x => x.line.coordinates)
   .reduce(flatten)
 
-const getPolyline = body => polyline.encode(getRoutePath(JSON.parse(body)));
+const getPolyline = (body) => polyline.encode(getRoutePath(JSON.parse(body)));
 
 const getRoute = (cb) => request(url, cb);
 
-//const handleRoute  = (cb) => (e, r, body) => console.log(getPolyline(body));
-//getRoute(handleRoute);
-
-const tollguruUrl = 'https://dev.tollguru.com/v1/calc/route'
-
-const handleRoute = (e, r, body) =>  {
+const handleRoute = (e, r, body) => {
   console.log(body)
   const _polyline = getPolyline(body);
   console.log(_polyline);
   request.post(
     {
-      url: tollguruUrl,
+      url: `${TOLLGURU_API_URL}/${POLYLINE_ENDPOINT}`,
       headers: {
         'content-type': 'application/json',
-        'x-api-key': tollguruKey
+        'x-api-key': TOLLGURU_API_KEY
       },
       body: JSON.stringify({ source: "bing", polyline: _polyline })
     },
@@ -51,8 +48,3 @@ const handleRoute = (e, r, body) =>  {
 };
 
 getRoute(handleRoute);
-
-        polyline: _polyline,
-        vehicleType: "2AxlesAuto",
-        departure_time: "2021-01-05T09:46:08Z"
-      })
