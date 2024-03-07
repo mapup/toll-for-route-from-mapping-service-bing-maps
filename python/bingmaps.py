@@ -1,18 +1,30 @@
-# Importing modules
 import requests
 import polyline as poly
 import os
 
-BING_API_KEY = os.environ.get("BING_API_KEY") # Token from Bing Maps
+BING_API_KEY = os.environ.get("BING_API_KEY")
 BING_API_URL = "http://dev.virtualearth.net/REST/v1/Routes"
 
-TOLLGURU_API_KEY = os.environ.get("TOLLGURU_API_KEY")  # API key for Tollguru
-TOLLGURU_API_KEY = "https://apis.tollguru.com/toll/v2"  # Base URL for TollGuru Toll API
+TOLLGURU_API_KEY = os.environ.get("TOLLGURU_API_KEY")
+TOLLGURU_API_URL = "https://apis.tollguru.com/toll/v2"
 POLYLINE_ENDPOINT = "complete-polyline-from-mapping-service"
 
+source = "Philadelphia, PA"
+destination = "New York, NY"
 
-# Fetching Polyline from bingmaps
+# Explore https://tollguru.com/toll-api-docs to get best of all the parameter that tollguru has to offer
+request_parameters = {
+    "vehicle": {
+        "type": "2AxlesAuto",
+    },
+    # Visit https://en.wikipedia.org/wiki/Unix_time to know the time format
+    "departure_time": "2021-01-05T09:46:08Z",
+}
+
+
 def get_polyline_from_bing_maps(source, destination):
+    """Fetching Polyline from bingmaps"""
+
     # Query bing with Key and Source-Destination coordinates
     url = f"{BING_API_URL}?key={BING_API_KEY}&wayPoint.1={source}&wayPoint.2=${destination}&routeAttributes=routePath"
     # converting the response to json
@@ -26,20 +38,19 @@ def get_polyline_from_bing_maps(source, destination):
     return polyline_from_bing
 
 
-# Calling Tollguru API
 def get_rates_from_tollguru(polyline):
+    """Calling Tollguru API"""
+
     # Tollguru resquest parameters
     headers = {"Content-type": "application/json", "x-api-key": TOLLGURU_API_KEY}
     params = {
-        # Explore https://tollguru.com/developers/docs/ to get best of all the parameter that tollguru has to offer
-        "source": "bing",
+        **request_parameters,
         "polyline": polyline,  # this is the encoded polyline that we made
-        "vehicleType": "2AxlesAuto",  #'''Visit https://tollguru.com/developers/docs/#vehicle-types to know more options'''
-        "departure_time": "2021-01-05T09:46:08Z",  #'''Visit https://en.wikipedia.org/wiki/Unix_time to know the time format'''
+        "source": "bing",
     }
     # Requesting Tollguru with parameters
     response_tollguru = requests.post(
-        f"{TOLLGURU_API_KEY}/{POLYLINE_ENDPOINT}",
+        f"{TOLLGURU_API_URL}/{POLYLINE_ENDPOINT}",
         json=params,
         headers=headers,
         timeout=200,
@@ -53,17 +64,13 @@ def get_rates_from_tollguru(polyline):
 
 
 if __name__ == "__main__":
-    # Step 1 :Provide Source and Destination
-    source = "Dallas, TX"
-    destination = "New York, NY"
-
-    # Step 2 : Get Polyline from Bing
+    # Step 1 : Get Polyline from Bing
     polyline_from_bing = get_polyline_from_bing_maps(source, destination)
 
-    # Step 3 : Get rates from Tollguru
+    # Step 2 : Get rates from Tollguru
     rates_from_tollguru = get_rates_from_tollguru(polyline_from_bing)
 
-    # Print the rates of all the available modes of payment
+    # Step 3 : Print the rates of all the available modes of payment
     if rates_from_tollguru == {}:
         print("The route doesn't have tolls")
     else:

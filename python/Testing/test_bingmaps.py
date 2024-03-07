@@ -1,18 +1,26 @@
-# Importing modules
 import requests
 import polyline as poly
 import os
 
-BING_API_KEY = os.environ.get("BING_API_KEY") # Token from Bing Maps
+BING_API_KEY = os.environ.get("BING_API_KEY")
 BING_API_URL = "http://dev.virtualearth.net/REST/v1/Routes"
 
-TOLLGURU_API_KEY = os.environ.get("TOLLGURU_API_KEY")  # API key for Tollguru
-TOLLGURU_API_URL = "https://apis.tollguru.com/toll/v2"  # Base URL for TollGuru Toll API
+TOLLGURU_API_KEY = os.environ.get("TOLLGURU_API_KEY")
+TOLLGURU_API_URL = "https://apis.tollguru.com/toll/v2"
 POLYLINE_ENDPOINT = "complete-polyline-from-mapping-service"
 
+# Explore https://tollguru.com/toll-api-docs to get best of all the parameter that tollguru has to offer
+request_parameters = {
+    "vehicle": {
+        "type": "2AxlesAuto",
+    },
+    # Visit https://en.wikipedia.org/wiki/Unix_time to know the time format
+    "departure_time": "2021-01-05T09:46:08Z",
+}
 
-# Fetching Polyline from bingmaps
 def get_polyline_from_bing_maps(source, destination):
+    """Fetching Polyline from bingmaps"""
+
     # Query bing with Key and Source-Destination coordinates
     url = f"{BING_API_URL}?key={BING_API_KEY}&wayPoint.1={source}&wayPoint.2=${destination}&routeAttributes=routePath"
     # converting the response to json
@@ -26,16 +34,15 @@ def get_polyline_from_bing_maps(source, destination):
     return polyline_from_bing
 
 
-# Calling Tollguru API
 def get_rates_from_tollguru(polyline):
+    """Calling Tollguru API"""
+
     # Tollguru resquest parameters
     headers = {"Content-type": "application/json", "x-api-key": TOLLGURU_API_KEY}
     params = {
-        # Explore https://tollguru.com/developers/docs/ to get best of all the parameter that tollguru has to offer
+        **request_parameters,
         "source": "bing",
         "polyline": polyline,  # this is the encoded polyline that we made
-        "vehicleType": "2AxlesAuto",  #'''Visit https://tollguru.com/developers/docs/#vehicle-types to know more options'''
-        "departure_time": "2021-01-05T09:46:08Z",  #'''Visit https://en.wikipedia.org/wiki/Unix_time to know the time format'''
     }
     # Requesting Tollguru with parameters
     response_tollguru = requests.post(

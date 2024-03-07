@@ -1,17 +1,30 @@
 const request = require("request");
 const polyline = require("polyline");
 
-const BING_API_KEY = process.env.BING_MAPS_API_KEY // Token from Bing Maps
+const BING_API_KEY = process.env.BING_API_KEY
 const BING_API_URL = "http://dev.virtualearth.net/REST/v1/Routes"
 
-const TOLLGURU_API_KEY = process.env.TOLLGURU_API_KEY // API key for Tollguru
-const TOLLGURU_API_URL = "https://apis.tollguru.com/toll/v2" // Base URL for TollGuru Toll API
+const TOLLGURU_API_KEY = process.env.TOLLGURU_API_KEY
+const TOLLGURU_API_URL = "https://apis.tollguru.com/toll/v2"
 const POLYLINE_ENDPOINT = "complete-polyline-from-mapping-service"
 
-const source = 'Dallas, TX'
+const source = 'Philadelphia, PA'
 const destination = 'New York, NY';
 
-const url = `${BING_API_URL}?key=${BING_API_KEY}&wayPoint.1=${source}&wayPoint.2=${destination}&routeAttributes=routePath`
+// Explore https://tollguru.com/toll-api-docs to get the best of all the parameters that tollguru has to offer
+const requestParameters = {
+  "vehicle": {
+    "type": "2AxlesAuto",
+  },
+  // Visit https://en.wikipedia.org/wiki/Unix_time to know the time format
+  "departure_time": "2021-01-05T09:46:08Z",
+}
+
+const url = `${BING_API_URL}?key=${BING_API_KEY}&${new URLSearchParams({
+  'wayPoint.1': source,
+  'wayPoint.2': destination,
+  routeAttributes: 'routePath'
+}).toString()}`
 
 const flatten = (arr, x) => arr.concat(x);
 
@@ -38,7 +51,11 @@ const handleRoute = (e, r, body) => {
         'content-type': 'application/json',
         'x-api-key': TOLLGURU_API_KEY
       },
-      body: JSON.stringify({ source: "bing", polyline: _polyline })
+      body: JSON.stringify({
+        source: "bing",
+        polyline: _polyline,
+        ...requestParameters,
+      })
     },
     (e, r, body) => {
       console.log(e);

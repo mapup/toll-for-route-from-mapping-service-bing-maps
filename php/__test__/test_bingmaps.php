@@ -1,12 +1,19 @@
 <?php
-//using bingsmap API
-
 $BING_API_KEY = getenv('BING_API_KEY'); // Token from Bing Maps
 $BING_API_URL = 'http://dev.virtualearth.net/REST/v1/Routes';
 
 $TOLLGURU_API_KEY = getenv('TOLLGURU_API_KEY'); // API key for Tollguru
 $TOLLGURU_API_URL = 'https://apis.tollguru.com/toll/v2'; // Base URL for TollGuru Toll API
 $POLYLINE_ENDPOINT = 'complete-polyline-from-mapping-service';
+
+// Explore https://tollguru.com/toll-api-docs to get the best of all the parameters that tollguru has to offer
+$request_parameters = array(
+  "vehicle" => array(
+    "type" => "2AxlesAuto",
+  ),
+  // Visit https://en.wikipedia.org/wiki/Unix_time to know the time format
+  "departure_time" => "2021-01-05T09:46:08Z",
+);
 
 //from & to location..
 function getPolyline($from, $to) {
@@ -50,76 +57,75 @@ function getPolyline($from, $to) {
 //testing starts here...
 require_once(__DIR__.'/test_location.php');
 foreach ($locdata as $item) {
-$polyline_bingmap = getPolyline($item['from'], $item['to']);
+  $polyline_bingmap = getPolyline($item['from'], $item['to']);
 
-//using tollguru API..
-$curl = curl_init();
+  //using tollguru API..
+  $curl = curl_init();
 
-curl_setopt($curl, CURLOPT_SSL_VERIFYHOST, false);
-curl_setopt($curl, CURLOPT_SSL_VERIFYPEER, false);
+  curl_setopt($curl, CURLOPT_SSL_VERIFYHOST, false);
+  curl_setopt($curl, CURLOPT_SSL_VERIFYPEER, false);
 
+  $postdata = array(
+    "source" => "bing",
+    "polyline" => $polyline_bingmap,
+    ...$request_parameters,
+  );
 
-$postdata = array(
-	"source" => "bing",
-	"polyline" => $polyline_bingmap
-);
+  //json encoding source and polyline to send as postfields..
+  $encode_postData = json_encode($postdata);
 
-//json encoding source and polyline to send as postfields..
-$encode_postData = json_encode($postdata);
+  curl_setopt_array($curl, array(
+    CURLOPT_URL => $TOLLGURU_API_URL . "/" . $POLYLINE_ENDPOINT,
+    CURLOPT_RETURNTRANSFER => true,
+    CURLOPT_ENCODING => "",
+    CURLOPT_MAXREDIRS => 10,
+    CURLOPT_TIMEOUT => 30,
+    CURLOPT_HTTP_VERSION => CURL_HTTP_VERSION_1_1,
+    CURLOPT_CUSTOMREQUEST => "POST",
 
-curl_setopt_array($curl, array(
-  CURLOPT_URL => $TOLLGURU_API_URL . $POLYLINE_ENDPOINT,
-  CURLOPT_RETURNTRANSFER => true,
-  CURLOPT_ENCODING => "",
-  CURLOPT_MAXREDIRS => 10,
-  CURLOPT_TIMEOUT => 30,
-  CURLOPT_HTTP_VERSION => CURL_HTTP_VERSION_1_1,
-  CURLOPT_CUSTOMREQUEST => "POST",
+    //sending bingmap polyline to tollguru
+    CURLOPT_POSTFIELDS => $encode_postData,
+    CURLOPT_HTTPHEADER => array(
+      "content-type: application/json",
+      "x-api-key: " . $TOLLGURU_API_KEY
+    )));
 
+  $response = curl_exec($curl);
+  $err = curl_error($curl);
 
-  //sending bingmap polyline to tollguru
-  CURLOPT_POSTFIELDS => $encode_postData,
-  CURLOPT_HTTPHEADER => array(
-    "content-type: application/json",
-    "x-api-key: " . $TOLLGURU_API_KEY
-));
+  curl_close($curl);
 
-$response = curl_exec($curl);
-$err = curl_error($curl);
+  if ($err) {
+    echo "cURL Error #:" . $err;
+  } else {
+    echo "200 : OK\n";
+  }
 
-curl_close($curl);
+  //response from tollguru..
+  // var_dump(json_decode($response, true));
+  $data = json_decode($response, true);
 
-if ($err) {
-	  echo "cURL Error #:" . $err;
-} else {
-	  echo "200 : OK\n";
-}
+  $tag = $data['route']['costs']['tag'];
+  $cash = $data['route']['costs']['cash'];
 
-//response from tollguru..
-// var_dump(json_decode($response, true));
-$data = json_decode($response, true);
+  $dumpFile = fopen("dump.txt", "a") or die("unable to open file!");
+  fwrite($dumpFile, "from =>");
+  fwrite($dumpFile, $item['from'].PHP_EOL);
+  fwrite($dumpFile, "to =>");
+  fwrite($dumpFile, $item['to'].PHP_EOL);
+  fwrite($dumpFile, "polyline =>".PHP_EOL);
+  fwrite($dumpFile, $polyline_bingmap.PHP_EOL);
+  fwrite($dumpFile, "tag =>");
+  fwrite($dumpFile, $tag.PHP_EOL);
+  fwrite($dumpFile, "cash =>");
+  fwrite($dumpFile, $cash.PHP_EOL);
+  fwrite($dumpFile, "*************************************************************************".PHP_EOL);
 
-$tag = $data['route']['costs']['tag'];
-$cash = $data['route']['costs']['cash'];
-
-$dumpFile = fopen("dump.txt", "a") or die("unable to open file!");
-fwrite($dumpFile, "from =>");
-fwrite($dumpFile, $item['from'].PHP_EOL);
-fwrite($dumpFile, "to =>");
-fwrite($dumpFile, $item['to'].PHP_EOL);
-fwrite($dumpFile, "polyline =>".PHP_EOL);
-fwrite($dumpFile, $polyline_bingmap.PHP_EOL);
-fwrite($dumpFile, "tag =>");
-fwrite($dumpFile, $tag.PHP_EOL);
-fwrite($dumpFile, "cash =>");
-fwrite($dumpFile, $cash.PHP_EOL);
-fwrite($dumpFile, "*************************************************************************".PHP_EOL);
-
-echo "tag = ";
-print_r($data['route']['costs']['tag']);
-echo "\ncash = ";
-print_r($data['route']['costs']['cash']);
-echo "\n";
-echo "**************************************************************************\n";
+  echo "tag = ";
+  print_r($data['route']['costs']['tag']);
+  echo "\ncash = ";
+  print_r($data['route']['costs']['cash']);
+  echo "\n";
+  echo "**************************************************************************\n";
 }
 ?>

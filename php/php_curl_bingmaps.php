@@ -1,7 +1,4 @@
 <?php
-//using googlemaps API
-
-
 $BING_API_KEY = getenv('BING_API_KEY'); // Token from Bing Maps
 $BING_API_URL = 'http://dev.virtualearth.net/REST/v1/Routes';
 
@@ -10,10 +7,19 @@ $TOLLGURU_API_URL = 'https://apis.tollguru.com/toll/v2'; // Base URL for TollGur
 $POLYLINE_ENDPOINT = 'complete-polyline-from-mapping-service';
 
 // from & to location..
-$from = 'Dallas, TX';
-$to = 'New York, NY';
+$source = 'Philadelphia, PA';
+$destination = 'New York, NY';
 
-$url = $BING_API_URL . '?key=' . $BING_API_KEY . '&wayPoint.1=' . urlencode($from) . '&wayPoint.2=' . urlencode($to) . '&routeAttributes=routePath';
+// Explore https://tollguru.com/toll-api-docs to get the best of all the parameters that tollguru has to offer
+$request_parameters = array(
+    "vehicle" => array(
+        "type" => "2AxlesAuto",
+    ),
+    // Visit https://en.wikipedia.org/wiki/Unix_time to know the time format
+    "departure_time" => "2021-01-05T09:46:08Z",
+);
+
+$url = $BING_API_URL . '?key=' . $BING_API_KEY . '&wayPoint.1=' . urlencode($source) . '&wayPoint.2=' . urlencode($destination) . '&routeAttributes=routePath';
 
 //connection..
 $bings = curl_init();
@@ -55,7 +61,8 @@ curl_setopt($curl, CURLOPT_SSL_VERIFYPEER, false);
 
 $postdata = array(
   "source" => "bing",
-  "polyline" => $polyline_bingmap
+  "polyline" => $polyline_bingmap,
+  ...$request_parameters,
 );
 
 //json encoding source and polyline to send as postfields..
