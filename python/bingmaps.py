@@ -9,6 +9,7 @@ TOLLGURU_API_KEY = os.environ.get("TOLLGURU_API_KEY")
 TOLLGURU_API_URL = "https://apis.tollguru.com/toll/v2"
 POLYLINE_ENDPOINT = "complete-polyline-from-mapping-service"
 
+# From and To locations
 source = "Philadelphia, PA"
 destination = "New York, NY"
 
@@ -29,7 +30,7 @@ def get_polyline_from_bing_maps(source, destination):
     url = f"{BING_API_URL}?key={BING_API_KEY}&wayPoint.1={source}&wayPoint.2=${destination}&routeAttributes=routePath"
     # converting the response to json
     response = requests.get(url).json()
-    # bingmap's does not give polyline directly rather provide coordinates of all the nodes
+    # BingMaps does not give polyline directly rather provide coordinates of all the nodes
     temp = response["resourceSets"][0]["resources"][0]["routePath"]["line"][
         "coordinates"
     ]
@@ -48,6 +49,7 @@ def get_rates_from_tollguru(polyline):
         "polyline": polyline,  # this is the encoded polyline that we made
         "source": "bing",
     }
+
     # Requesting Tollguru with parameters
     response_tollguru = requests.post(
         f"{TOLLGURU_API_URL}/{POLYLINE_ENDPOINT}",
@@ -55,7 +57,7 @@ def get_rates_from_tollguru(polyline):
         headers=headers,
         timeout=200,
     ).json()
-    # print(response_tollguru)
+
     # checking for errors or printing rates
     if str(response_tollguru).find("message") == -1:
         return response_tollguru["route"]["costs"]

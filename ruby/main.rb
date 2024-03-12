@@ -10,6 +10,7 @@ TOLLGURU_API_KEY = ENV['TOLLGURU_API_KEY']
 TOLLGURU_API_URL = 'https//api.tollguru.com/toll/v2'
 POLYLINE_ENDPOINT = 'complete-polyline-from-mapping-service'
 
+# To and From locations
 source = 'Philadelphia, PA'
 destination = 'New York, NY'
 
