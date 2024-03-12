@@ -6,7 +6,7 @@ $TOLLGURU_API_KEY = getenv('TOLLGURU_API_KEY'); // API key for Tollguru
 $TOLLGURU_API_URL = 'https://apis.tollguru.com/toll/v2'; // Base URL for TollGuru Toll API
 $POLYLINE_ENDPOINT = 'complete-polyline-from-mapping-service';
 
-// from & to location..
+// From & To locations
 $source = 'Philadelphia, PA';
 $destination = 'New York, NY';
 
@@ -21,7 +21,7 @@ $request_parameters = array(
 
 $url = $BING_API_URL . '?key=' . $BING_API_KEY . '&wayPoint.1=' . urlencode($source) . '&wayPoint.2=' . urlencode($destination) . '&routeAttributes=routePath';
 
-//connection..
+// Connection
 $bings = curl_init();
 
 curl_setopt($bings, CURLOPT_SSL_VERIFYHOST, false);
@@ -30,7 +30,7 @@ curl_setopt($bings, CURLOPT_SSL_VERIFYPEER, false);
 curl_setopt($bings, CURLOPT_URL, $url);
 curl_setopt($bings, CURLOPT_RETURNTRANSFER, true);
 
-//getting response from binmapsapis..
+// Getting response from BingMaps API
 $response = curl_exec($bings);
 $err = curl_error($bings);
 
@@ -42,22 +42,19 @@ if ($err) {
   echo "200 : OK\n";
 }
 
-//extracting polyline from the JSON response..
+// Extracting polyline from the JSON response
 $data_bingmap = json_decode($response, true);
 $p_final = $data_bingmap['resourceSets']['0']['resources']['0']['routePath']['line']['coordinates'];
 
-//polyline..
+// Polyline
 require_once(__DIR__ . '/Polyline.php');
 $polyline_bingmap = Polyline::encode($p_final);
 
-
-
-//using tollguru API..
+// Using tollguru API
 $curl = curl_init();
 
 curl_setopt($curl, CURLOPT_SSL_VERIFYHOST, false);
 curl_setopt($curl, CURLOPT_SSL_VERIFYPEER, false);
-
 
 $postdata = array(
   "source" => "bing",
@@ -65,7 +62,7 @@ $postdata = array(
   ...$request_parameters,
 );
 
-//json encoding source and polyline to send as postfields..
+// JSON encoding source and polyline to send as postfields
 $encode_postData = json_encode($postdata);
 
 curl_setopt_array($curl, array(
@@ -77,7 +74,7 @@ curl_setopt_array($curl, array(
   CURLOPT_HTTP_VERSION => CURL_HTTP_VERSION_1_1,
   CURLOPT_CUSTOMREQUEST => "POST",
 
-  //sending bingmap polyline to tollguru
+  // Sending bingmap polyline to TollGuru
   CURLOPT_POSTFIELDS => $encode_postData,
   CURLOPT_HTTPHEADER => array(
     "content-type: application/json",
@@ -96,6 +93,6 @@ if ($err) {
   echo "200 : OK\n";
 }
 
-//response from tollguru..
+// Response from TollGuru
 $data = var_dump(json_decode($response, true));
 print_r($data);

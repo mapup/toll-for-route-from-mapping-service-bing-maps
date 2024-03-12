@@ -44,6 +44,7 @@ def get_rates_from_tollguru(polyline):
         "source": "bing",
         "polyline": polyline,  # this is the encoded polyline that we made
     }
+
     # Requesting Tollguru with parameters
     response_tollguru = requests.post(
         f"{TOLLGURU_API_URL}/{POLYLINE_ENDPOINT}",
@@ -51,13 +52,12 @@ def get_rates_from_tollguru(polyline):
         headers=headers,
         timeout=200,
     ).json()
-    # print(response_tollguru)
+
     # checking for errors or printing rates
     if str(response_tollguru).find("message") == -1:
         return response_tollguru["route"]["costs"]
     else:
         raise Exception(response_tollguru["message"])
-
 
 """Testing"""
 # Importing Functions
